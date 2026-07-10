@@ -1,0 +1,111 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft, ArrowRight, BarChart3, Check, ChevronDown, ChevronLeft, ChevronRight,
+  CircleHelp, Copy, Eye, FileText, GripVertical, LayoutGrid, Link as LinkIcon,
+  MoreHorizontal, MousePointer2, Plus, Send, Settings, Sparkles, Trash2, X
+} from "lucide-react";
+
+type Kind = "short_text" | "long_text" | "multiple_choice" | "dropdown" | "email" | "number" | "yes_no" | "rating";
+type Question = { id: string; type: Kind; title: string; description?: string; required: boolean; options?: string[] };
+type Form = { id: string; title: string; status: "draft" | "published"; responses: number; updatedAt: string; questions: Question[] };
+
+const templates: Question[] = [
+  { id: "q1", type: "short_text", title: "What should we call you?", description: "We'd love to get to know you.", required: true },
+  { id: "q2", type: "multiple_choice", title: "What brings you here today?", required: true, options: ["Explore a new idea", "Share feedback", "Join the community"] },
+  { id: "q3", type: "rating", title: "How was your experience?", description: "One star = not great, five stars = wonderful.", required: false },
+  { id: "q4", type: "long_text", title: "Anything else you'd like to share?", required: false }
+];
+
+const initialForms: Form[] = [
+  { id: "welcome-survey", title: "Welcome survey", status: "published", responses: 42, updatedAt: "Edited 2 hours ago", questions: templates },
+  { id: "product-feedback", title: "Product feedback", status: "published", responses: 18, updatedAt: "Edited yesterday", questions: templates.slice(0, 3) },
+  { id: "event-rsvp", title: "Community event RSVP", status: "draft", responses: 0, updatedAt: "Edited Jul 8", questions: templates.slice(0, 2) }
+];
+
+const labels: Record<Kind, string> = {
+  short_text: "Short text", long_text: "Long text", multiple_choice: "Multiple choice", dropdown: "Dropdown", email: "Email", number: "Number", yes_no: "Yes / No", rating: "Rating"
+};
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "green" | "orange" }) {
+  return <span className={`pill ${tone}`}>{children}</span>;
+}
+
+export default function Home() {
+  const [forms, setForms] = useState<Form[]>(initialForms);
+  const [screen, setScreen] = useState<"dashboard" | "builder" | "public" | "results">("dashboard");
+  const [formId, setFormId] = useState("welcome-survey");
+  const [selected, setSelected] = useState("q1");
+  const [toast, setToast] = useState("");
+  const form = forms.find(f => f.id === formId) ?? forms[0];
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = setTimeout(() => setToast(""), 2600);
+    return () => clearTimeout(timeout);
+  }, [toast]);
+
+  const saveForm = (next: Form) => setForms(all => all.map(f => f.id === next.id ? next : f));
+  const createForm = () => {
+    const next: Form = { id: uid(), title: "Untitled form", status: "draft", responses: 0, updatedAt: "Edited just now", questions: [{ id: uid(), type: "short_text", title: "Your first question", required: true }] };
+    setForms(all => [next, ...all]); setFormId(next.id); setSelected(next.questions[0].id); setScreen("builder");
+  };
+  const openBuilder = (id: string) => { const found = forms.find(f => f.id === id)!; setFormId(id); setSelected(found.questions[0]?.id || ""); setScreen("builder"); };
+
+  return <main>
+    {screen === "dashboard" && <Dashboard forms={forms} create={createForm} open={openBuilder} duplicate={(id) => {
+      const original = forms.find(f => f.id === id)!; const copy = { ...original, id: uid(), title: `${original.title} (copy)`, status: "draft" as const, responses: 0, updatedAt: "Edited just now" };
+      setForms(all => [copy, ...all]); setToast("Form duplicated");
+    }} remove={(id) => { setForms(all => all.filter(f => f.id !== id)); setToast("Form deleted"); }} />}
+    {screen === "builder" && <Builder form={form} selected={selected} setSelected={setSelected} save={saveForm} back={() => setScreen("dashboard")} preview={() => setScreen("public")} results={() => setScreen("results")} toast={setToast} />}
+    {screen === "public" && <PublicForm form={form} close={() => setScreen("builder")} submit={() => { saveForm({ ...form, responses: form.responses + 1 }); setToast("Response received"); }} />}
+    {screen === "results" && <Results form={form} close={() => setScreen("builder")} />}
+    {toast && <div className="toast"><Check size={16} /> {toast}</div>}
+  </main>;
+}
+
+function Brand() { return <div className="brand"><span className="brand-mark">F</span><span>formly</span></div>; }
+
+function Dashboard({ forms, create, open, duplicate, remove }: { forms: Form[]; create: () => void; open: (id: string) => void; duplicate: (id: string) => void; remove: (id: string) => void }) {
+  return <div className="app-shell"><aside className="side"><Brand /><nav><button className="nav-item active"><LayoutGrid size={18} /> My workspace</button><button className="nav-item"><Sparkles size={18} /> Templates</button><button className="nav-item"><CircleHelp size={18} /> Help center</button></nav><div className="profile"><span className="avatar">AR</span><span><b>Aryan</b><small>Free workspace</small></span><ChevronDown size={16} /></div></aside><section className="dashboard"><header className="topbar"><div><p className="eyebrow">MY WORKSPACE</p><h1>Good evening, Aryan <span>✦</span></h1></div><button className="button primary" onClick={create}><Plus size={18} /> Create a form</button></header><div className="dashboard-tabs"><button className="selected">My forms <span>{forms.length}</span></button><button>Shared with me</button><div className="search">⌕ <span>Search forms</span></div></div><div className="form-grid">{forms.map(form => <article className="form-card" key={form.id}><div className="card-top"><div className="form-icon"><FileText size={22} /></div><button className="icon-button"><MoreHorizontal size={20} /></button></div><div className="form-info" onClick={() => open(form.id)}><div className="card-title-row"><h3>{form.title}</h3><Pill tone={form.status === "published" ? "green" : "orange"}>{form.status}</Pill></div><p>{form.updatedAt}</p></div><footer><span><BarChart3 size={15} /> {form.responses} {form.responses === 1 ? "response" : "responses"}</span><div className="card-actions"><button aria-label="Duplicate" onClick={() => duplicate(form.id)}><Copy size={16} /></button><button aria-label="Delete" onClick={() => remove(form.id)}><Trash2 size={16} /></button></div></footer></article>)}<button className="new-card" onClick={create}><span><Plus size={22} /></span><b>Start from scratch</b><small>Create a form your way</small></button></div></section></div>;
+}
+
+function Builder({ form, selected, setSelected, save, back, preview, results, toast }: { form: Form; selected: string; setSelected: (id: string) => void; save: (form: Form) => void; back: () => void; preview: () => void; results: () => void; toast: (x: string) => void }) {
+  const question = form.questions.find(q => q.id === selected) ?? form.questions[0];
+  const update = (patch: Partial<Question>) => save({ ...form, updatedAt: "Edited just now", questions: form.questions.map(q => q.id === question.id ? { ...q, ...patch } : q) });
+  const addQuestion = (type: Kind = "short_text") => { const q: Question = { id: uid(), type, title: "Your question here", required: false, options: type === "multiple_choice" || type === "dropdown" ? ["Option 1", "Option 2"] : undefined }; save({ ...form, questions: [...form.questions, q] }); setSelected(q.id); };
+  const deleteQuestion = () => { if (form.questions.length === 1) return toast("A form needs at least one question"); const next = form.questions.filter(q => q.id !== question.id); save({ ...form, questions: next }); setSelected(next[0].id); };
+  const togglePublish = () => { const published = form.status === "draft"; save({ ...form, status: published ? "published" : "draft" }); toast(published ? "Your form is published" : "Form moved to draft"); };
+  return <div className="builder"><header className="builder-bar"><button className="back-button" onClick={back}><ChevronLeft size={21} /> Workspace</button><input className="form-name" aria-label="Form title" value={form.title} onChange={e => save({ ...form, title: e.target.value })} /><div className="builder-actions"><button className="text-button" onClick={results}><BarChart3 size={17} /> Results</button><button className="text-button" onClick={preview}><Eye size={17} /> Preview</button><button className={`button ${form.status === "published" ? "published" : "primary"}`} onClick={togglePublish}>{form.status === "published" ? <><Check size={16} /> Published</> : <><Send size={16} /> Publish</>}</button></div></header><div className="builder-body"><aside className="question-list"><div className="question-list-head"><b>Content</b><button onClick={() => addQuestion()}><Plus size={18} /></button></div>{form.questions.map((q, i) => <button className={`question-row ${q.id === selected ? "active" : ""}`} key={q.id} onClick={() => setSelected(q.id)}><GripVertical size={15} /><span className="question-number">{i + 1}</span><span>{q.title || "Untitled question"}</span></button>)}<button className="add-question" onClick={() => addQuestion()}><Plus size={17} /> Add question</button></aside><section className="editor"><div className="editor-top"><Pill>{labels[question.type]}</Pill><button className="delete-button" onClick={deleteQuestion}><Trash2 size={17} /> Delete</button></div><textarea className="question-title" value={question.title} onChange={e => update({ title: e.target.value })} rows={2} placeholder="Type your question" /><textarea className="question-description" value={question.description ?? ""} onChange={e => update({ description: e.target.value })} rows={2} placeholder="Add a description (optional)" />{(question.type === "multiple_choice" || question.type === "dropdown") && <OptionsEditor question={question} update={update} />}<QuestionSample question={question} /><div className="required-row"><span><b>Required</b><small>People must answer this question</small></span><button aria-label="Toggle required" className={`toggle ${question.required ? "on" : ""}`} onClick={() => update({ required: !question.required })}><i /></button></div></section><aside className="settings-panel"><div className="settings-heading"><Settings size={18} /><b>Question type</b></div><div className="type-grid">{(Object.keys(labels) as Kind[]).map(type => <button key={type} className={type === question.type ? "chosen" : ""} onClick={() => update({ type, options: type === "multiple_choice" || type === "dropdown" ? question.options?.length ? question.options : ["Option 1", "Option 2"] : undefined })}>{labels[type]}</button>)}</div><div className="coming"><Sparkles size={16} /><span><b>Logic</b><small>Coming soon</small></span></div><div className="coming"><MousePointer2 size={16} /><span><b>Integrations</b><small>Coming soon</small></span></div></aside></div></div>;
+}
+
+function OptionsEditor({ question, update }: { question: Question; update: (patch: Partial<Question>) => void }) {
+  const options = question.options ?? [];
+  return <div className="options-editor"><label>Choices</label>{options.map((option, index) => <div className="option-edit" key={index}><span>{index + 1}</span><input value={option} onChange={e => update({ options: options.map((o, i) => i === index ? e.target.value : o) })} /><button onClick={() => update({ options: options.filter((_, i) => i !== index) })}><X size={15} /></button></div>)}<button className="add-option" onClick={() => update({ options: [...options, `Option ${options.length + 1}`] })}><Plus size={15} /> Add choice</button></div>;
+}
+
+function QuestionSample({ question }: { question: Question }) {
+  if (question.type === "long_text") return <textarea className="sample-input large" placeholder="Type your answer here..." />;
+  if (question.type === "multiple_choice") return <div className="sample-choices">{question.options?.map((o, i) => <button key={o}><span>{String.fromCharCode(65 + i)}</span>{o}</button>)}</div>;
+  if (question.type === "dropdown") return <button className="dropdown-sample">Select an option <ChevronDown size={18} /></button>;
+  if (question.type === "yes_no") return <div className="yesno"><button>Yes</button><button>No</button></div>;
+  if (question.type === "rating") return <div className="stars">{[1, 2, 3, 4, 5].map(n => <button key={n}>★<small>{n}</small></button>)}</div>;
+  return <input className="sample-input" placeholder={question.type === "email" ? "name@example.com" : question.type === "number" ? "0" : "Type your answer here..."} />;
+}
+
+function PublicForm({ form, close, submit }: { form: Form; close: () => void; submit: () => void }) {
+  const [index, setIndex] = useState(0); const [answers, setAnswers] = useState<Record<string, string>>({}); const [error, setError] = useState(""); const [done, setDone] = useState(false);
+  const question = form.questions[index]; const answer = answers[question.id] ?? "";
+  const continueForm = () => { if (question.required && !answer.trim()) return setError("Please answer this question to continue."); if (question.type === "email" && answer && !/^\S+@\S+\.\S+$/.test(answer)) return setError("Enter a valid email address."); if (question.type === "number" && answer && Number.isNaN(Number(answer))) return setError("Enter a valid number."); setError(""); if (index === form.questions.length - 1) { setDone(true); submit(); } else setIndex(i => i + 1); };
+  useEffect(() => { const key = (e: KeyboardEvent) => { if (e.key === "Enter" && question.type !== "long_text") continueForm(); if (e.key === "ArrowRight") continueForm(); if (e.key === "ArrowLeft" && index) setIndex(i => i - 1); }; window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key); });
+  if (done) return <div className="public-form"><button className="public-close" onClick={close}><X size={20} /> Close preview</button><div className="thank-you"><div className="success-mark"><Check size={32} /></div><p className="eyebrow">ALL DONE</p><h1>Thank you for sharing.</h1><p>Your response has been recorded. We really appreciate your time.</p><button className="button dark" onClick={close}>Back to editor</button></div></div>;
+  return <div className="public-form"><button className="public-close" onClick={close}><X size={20} /> Close preview</button><div className="public-brand"><Brand /></div><div className="progress"><i style={{ width: `${((index + 1) / form.questions.length) * 100}%` }} /></div><section className="respondent-question"><div className="public-number">{index + 1} <span>→</span></div><h1>{question.title}</h1>{question.description && <p>{question.description}</p>}<div className="answer-area">{question.type === "long_text" ? <textarea autoFocus value={answer} onChange={e => setAnswers({ ...answers, [question.id]: e.target.value })} placeholder="Type your answer here..." /> : question.type === "multiple_choice" ? <div className="public-choices">{question.options?.map((o, i) => <button className={answer === o ? "selected" : ""} key={o} onClick={() => setAnswers({ ...answers, [question.id]: o })}><kbd>{String.fromCharCode(65 + i)}</kbd>{o}</button>)}</div> : question.type === "yes_no" ? <div className="public-choices yes"><button className={answer === "Yes" ? "selected" : ""} onClick={() => setAnswers({ ...answers, [question.id]: "Yes" })}><kbd>Y</kbd> Yes</button><button className={answer === "No" ? "selected" : ""} onClick={() => setAnswers({ ...answers, [question.id]: "No" })}><kbd>N</kbd> No</button></div> : question.type === "rating" ? <div className="public-rating">{[1, 2, 3, 4, 5].map(n => <button key={n} className={Number(answer) >= n ? "lit" : ""} onClick={() => setAnswers({ ...answers, [question.id]: String(n) })}>★</button>)}</div> : question.type === "dropdown" ? <select value={answer} onChange={e => setAnswers({ ...answers, [question.id]: e.target.value })}><option value="">Select an option</option>{question.options?.map(o => <option key={o}>{o}</option>)}</select> : <input autoFocus type={question.type === "email" ? "email" : question.type === "number" ? "number" : "text"} value={answer} onChange={e => setAnswers({ ...answers, [question.id]: e.target.value })} placeholder="Type your answer here..." />}</div>{error && <p className="validation">{error}</p>}<button className="continue" onClick={continueForm}>{index === form.questions.length - 1 ? "Submit" : "OK"} <ArrowRight size={17} /></button><small className="keyboard">press <kbd>Enter ↵</kbd> to continue</small></section><footer className="public-footer"><span>{index + 1} of {form.questions.length}</span><div><button onClick={() => index && setIndex(i => i - 1)} disabled={!index}><ArrowLeft size={16} /></button><button onClick={continueForm}><ArrowRight size={16} /></button></div></footer></div>;
+}
+
+function Results({ form, close }: { form: Form; close: () => void }) {
+  const choices = form.questions.find(q => q.type === "multiple_choice")?.options ?? [];
+  return <div className="results"><header className="results-bar"><button className="back-button" onClick={close}><ChevronLeft size={21} /> Editor</button><Brand /><button className="button primary"><LinkIcon size={16} /> Share form</button></header><section className="results-main"><p className="eyebrow">RESULTS</p><h1>{form.title}</h1><div className="metrics"><div><b>{form.responses}</b><span>Responses</span></div><div><b>84%</b><span>Completion rate</span></div><div><b>1m 24s</b><span>Average time</span></div></div><div className="response-table"><div className="section-heading"><div><h2>Responses</h2><p>See every submission in one place.</p></div><button className="button secondary">Export CSV</button></div>{form.responses === 0 ? <div className="empty">No responses yet. Share your form to start collecting answers.</div> : <><div className="table-head"><span>RESPONDENT</span><span>STATUS</span><span>SUBMITTED</span><span /></div>{["Maya Patel", "Jordan Lee", "Alex Morgan", "Samira Khan"].map((name, i) => <div className="table-row" key={name}><span><i className="response-avatar">{name.slice(0, 1)}</i>{name}</span><span><Pill tone="green">Completed</Pill></span><span>{i + 1} hours ago</span><ChevronRight size={18} /></div>)}</>}</div>{choices.length > 0 && <div className="chart-card"><h2>What brings you here today?</h2><p>Summary of selected answers</p>{choices.map((choice, index) => <div className="bar-row" key={choice}><span>{choice}</span><div><i style={{ width: `${[56, 32, 12][index] ?? 10}%` }} /></div><b>{[56, 32, 12][index] ?? 0}%</b></div>)}</div>}</section></div>;
+}
