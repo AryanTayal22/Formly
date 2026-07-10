@@ -8,8 +8,9 @@ A full-stack conversational form builder closely inspired by Typeform. It includ
 - **Backend:** Python, FastAPI, SQLAlchemy ORM, Pydantic (for data validation).
 - **Database:** SQLite (`formly.db`).
 
-## Setup Instructions
+## Setup & Deployment Instructions
 
+### Local Development Setup
 You can run both servers using the convenient npm scripts in the project root. Make sure you have Node.js and Python installed.
 
 **1. Install all dependencies:**
@@ -27,7 +28,7 @@ Open two terminal windows in the root of the project.
 In Terminal 1 (Frontend):
 ```bash
 npm run dev
-# The Next.js app will start on http://localhost:3000 (or 3001)
+# The Next.js app will start on http://localhost:3000
 ```
 
 In Terminal 2 (Backend):
@@ -37,10 +38,35 @@ npm run backend
 # The database will be created and seeded automatically.
 ```
 
+### Deployment Guide
+The project is built to easily deploy across platforms like Vercel and Render.
+
+**1. Preparing GitHub:**
+Push your repository to GitHub using:
+```bash
+git branch -M main
+git remote add origin <YOUR_GITHUB_URL>
+git push -u origin main
+```
+
+**2. Backend Deployment (Render.com):**
+- Create a new **Web Service** on Render and connect your repository.
+- **Root Directory:** `backend`
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- *Note:* The repository includes a `.python-version` file specifying Python 3.11.0 to ensure successful installation of `pydantic-core` in Render's build environment.
+
+**3. Frontend Deployment (Vercel):**
+- Create a new **Project** on Vercel and connect your repository.
+- **Framework Preset:** Next.js
+- **Root Directory:** `frontend` *(CRITICAL: Vercel must step into this folder to find Next.js!)*
+- **Environment Variables:** Add `NEXT_PUBLIC_API_URL` and set its value to your new Render backend URL.
+- Deploy!
+
 ## Architecture Overview
 
 The application follows a standard Client-Server architecture:
-- **Client (Frontend):** A React/Next.js single-page application. It acts as a thin client, making asynchronous `fetch` calls to the backend REST API for all state changes. The UI heavily utilizes CSS variables and custom animations to replicate the premium Typeform feel.
+- **Client (Frontend):** A React/Next.js single-page application. It acts as a thin client, making asynchronous `fetch` calls to the backend REST API for all state changes. The UI heavily utilizes CSS variables and custom animations to replicate the premium Typeform feel. It's modularized into distinct components (Dashboard, Builder, PublicForm, Results).
 - **Server (Backend):** A FastAPI application that exposes a fully RESTful API. It handles all validation logic (e.g., verifying required fields and email formats on submission) and persists data using SQLAlchemy.
 
 ## Database Schema
@@ -74,6 +100,5 @@ The backend uses a normalized relational database schema with four core tables, 
 ## Assumptions Made
 
 - **Creator Authentication:** Real authentication is simplified for this MVP. We assume a default logged-in creator ("Aryan") who owns all forms in the single workspace.
-- **Component Modularity:** For the sake of rapid prototyping, the vast majority of the frontend components (Dashboard, Builder, Respondent Flow, Analytics) are housed within `frontend/app/page.tsx`. In a production environment, these would be split into a `components/` directory.
+- **State Integrity:** When a creator modifies a form's questions in the builder, the backend is smart enough to perform a differential update (matching existing question IDs) so that historical responses and answers are strictly preserved.
 - **Placeholders:** Advanced features outside of the core CRUD and respondent flow—such as Theme Customization, Logic Jumps, Webhook Integrations, Team Collaboration, and Payment/File-Upload question types—are represented by deliberate "Coming Soon" UI placeholders as per the requirements.
-- **Form Edits are Destructive:** When a creator modifies a form's questions in the builder, the backend deletes the old questions and creates new ones, which automatically clears out any historical answers attached to the old questions.
