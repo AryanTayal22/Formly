@@ -97,6 +97,23 @@ The backend uses a normalized relational database schema with four core tables, 
    - `question_id` (Foreign Key -> questions.id)
    - `value` (Text payload containing the answer)
 
+## API Overview
+
+The FastAPI backend exposes a clean RESTful interface for both the creator workspace and the public respondent flow:
+
+### Creator API
+- `GET /forms` — Lists all forms for the dashboard.
+- `POST /forms` — Creates a new form.
+- `GET /forms/{id}` — Fetches a full form definition for the builder.
+- `PUT /forms/{id}` — Updates a form's metadata and completely syncs its questions.
+- `DELETE /forms/{id}` — Deletes a form and cascades to all its questions and responses.
+- `GET /forms/{id}/responses` — Retrieves all full submission records.
+- `GET /forms/{id}/analytics` — Computes and returns summary statistics and option counts.
+
+### Public API
+- `GET /public/forms/{id}` — Safely fetches a published form for respondents (fails if draft).
+- `POST /public/forms/{id}/responses` — Submits a respondent's answers. Enforces strict server-side validation (e.g. required fields, valid email structures, number checking) before persisting.
+
 ## Assumptions Made
 
 - **Creator Authentication:** Real authentication is simplified for this MVP. We assume a default logged-in creator ("Aryan") who owns all forms in the single workspace.
