@@ -137,3 +137,4 @@ The FastAPI backend exposes a clean RESTful interface:
 - **Creator Authentication:** Real authentication is simplified for this MVP. We assume a default logged-in creator ("Aryan") who owns all forms in the single workspace.
 - **State Integrity:** When a creator modifies a form's questions in the builder, the backend is smart enough to perform a differential update (matching existing question IDs) so that historical responses and answers are strictly preserved.
 - **Placeholders:** Advanced features outside of the core CRUD and respondent flow—such as Theme Customization, Logic Jumps, Webhook Integrations, Team Collaboration, and Payment/File-Upload question types—are represented by deliberate "Coming Soon" UI placeholders as per the requirements.
+- **Analytics Metrics:** The "Completion Rate" and "Average Time" metrics shown on the Results dashboard are hardcoded for reference/UI placeholder purposes and do not reflect actual calculated user tracking data.
