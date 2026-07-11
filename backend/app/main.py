@@ -56,8 +56,12 @@ def seed(db: Session):
         response = Response(form_id=form3.id); db.add(response); db.flush()
         db.add_all(Answer(response_id=response.id, question_id=q.id, value=value) for q, value in zip(form3.questions, values))
 
-    db.commit()
+    # Form 4: Product Feedback (Draft)
+    form4 = Form(title="Product Feedback (Draft)", status="draft", thank_you_message="Thanks!")
+    replace_questions(form4, [QuestionIn(type="short_text", title="What feature would you like to see next?", required=False), QuestionIn(type="multiple_choice", title="How often do you use our product?", required=False, options=["Daily", "Weekly", "Monthly"])])
+    db.add(form4)
 
+    db.commit()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)

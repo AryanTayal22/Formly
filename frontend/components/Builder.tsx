@@ -14,7 +14,7 @@ export function Builder({ form, selectedId, setSelectedId, save, back, openPubli
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const question = form.questions.find(item => item.id === selectedId) ?? form.questions[0];
-  const link = typeof window === "undefined" ? "" : `${window.location.origin}/?form=${form.id}`;
+  const link = typeof window === "undefined" ? "" : `${window.location.origin}/forms/${form.id}`;
   const patchQuestion = (patch: Partial<Question>) => save({ ...form, updatedAt: "Edited just now", questions: form.questions.map(item => item.id === question.id ? { ...item, ...patch } : item) });
   const addQuestion = () => { const next: Question = { id: uid(), type: "short_text", title: "Your question here", required: false }; save({ ...form, questions: [...form.questions, next], updatedAt: "Edited just now" }); setSelectedId(next.id); };
   const removeQuestion = () => { if (form.questions.length === 1) return notify("A form needs at least one question"); const remaining = form.questions.filter(item => item.id !== question.id); save({ ...form, questions: remaining }); setSelectedId(remaining[0].id); };

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Styles } from "../components/Shared";
 
 export const metadata: Metadata = {
   title: "Formly — create forms people enjoy",
@@ -7,5 +8,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return (
+    <html lang="en">
+      <body>
+        <main>
+          <Styles />
+          {children}
+        </main>
+      </body>
+    </html>
+  );
 }

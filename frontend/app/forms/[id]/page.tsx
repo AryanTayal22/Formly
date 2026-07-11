@@ -56,8 +56,7 @@ export default function PublicFormPage({ params }: { params: { id: string } }) {
     if (isPreview) {
       router.push(`/forms/${params.id}/edit`);
     } else {
-      // Just redirect somewhere safe if they try to close a public form
-      window.location.href = "https://typeform.com"; 
+      router.push("/");
     }
   };
 

@@ -66,8 +66,18 @@ git push -u origin main
 ## Architecture Overview
 
 The application follows a standard Client-Server architecture:
-- **Client (Frontend):** A React/Next.js single-page application. It acts as a thin client, making asynchronous `fetch` calls to the backend REST API for all state changes. The UI heavily utilizes CSS variables and custom animations to replicate the premium Typeform feel. It's modularized into distinct components (Dashboard, Builder, PublicForm, Results).
+- **Client (Frontend):** A Next.js App Router multi-page application. It utilizes dynamic routing (`/forms`, `/forms/[id]`, `/forms/[id]/edit`, `/forms/[id]/results`) to provide clean, shareable URLs for every workspace and public respondent view, making asynchronous `fetch` calls to the backend REST API for all state changes. The UI heavily utilizes CSS variables and custom animations to replicate the premium Typeform feel. It's modularized into distinct components (Dashboard, Builder, PublicForm, Results).
 - **Server (Backend):** A FastAPI application that exposes a fully RESTful API. It handles all validation logic (e.g., verifying required fields and email formats on submission) and persists data using SQLAlchemy.
+
+## Database Seeding
+
+On a fresh startup (e.g., when the `formly.db` SQLite file does not exist or is completely empty, such as during a fresh Render deployment), the backend automatically seeds the database with 4 robust template forms:
+- A Welcome Survey
+- A Customer Satisfaction Survey
+- A Community Event RSVP
+- A Product Feedback (Draft)
+
+These forms are fully populated with a variety of question types and mock respondent submissions to instantly demonstrate the platform's analytics and builder capabilities.
 
 ## Database Schema
 
@@ -97,9 +107,17 @@ The backend uses a normalized relational database schema with four core tables, 
    - `question_id` (Foreign Key -> questions.id)
    - `value` (Text payload containing the answer)
 
-## API Overview
+## API & Routing Overview
 
-The FastAPI backend exposes a clean RESTful interface for both the creator workspace and the public respondent flow:
+The platform uses clean, predictable URL structures for both the frontend client and the backend REST API.
+
+### Frontend Routes (Next.js App Router)
+- `/forms` — Creator Dashboard (Workspace).
+- `/forms/{id}` — Public Respondent Flow (e.g. `/forms/1`).
+- `/forms/{id}/edit` — Creator Builder and Question Editor.
+- `/forms/{id}/results` — Analytics and Individual Responses Dashboard.
+
+The FastAPI backend exposes a clean RESTful interface:
 
 ### Creator API
 - `GET /forms` — Lists all forms for the dashboard.
